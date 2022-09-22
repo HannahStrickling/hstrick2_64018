@@ -1,0 +1,160 @@
+---
+title: "Assignment 2 64018"
+author: "Hannah Strickling"
+date: "2022-09-12"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+
+library(lpSolveAPI)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Instructions
+
+This product can be made in three sizes--large, medium, and small--that yield a net unit profit of $420, $360, and $300, 
+respectively. Plants 1, 2, and 3 have the excess capacity to produce 750, 900, and 450 units per 
+day of this product.
+ 
+Plants 1, 2, and 3 have 13,000, 12,000, and 5,000 square feet, respectively, of in-process storage space available for a day's production of this product. Each unit of the large, medium, and small sizes produced per day requires 20, 15, and 12 square feet, 
+respectively. 
+ 
+Sales forecasts indicate that if available, 900, 1,200, and 750 units of the large, medium, and 
+small sizes, respectively, would be sold per day. 
+ 
+At each plant, some employees will need to be laid off unless most of the plant’s excess 
+production capacity can be used to produce the new product. To avoid layoffs if possible, 
+management has decided that the plants should use the same percentage of their excess capacity 
+to produce the new product. 
+ 
+Management wishes to know how much of each of the sizes should be produced by each of the 
+plants to maximize profit. 
+
+Large: $420 profit, 20sqft, 900sale
+Medium: $360 profit, 15 sqft, 1200sale
+Small: $300 profit, 12sqft, 750sale
+
+Plant 1:750 units, 13000sqft
+Plant 2:900 units, 12000sqft
+Plant 3:450 units, 5000sqft
+
+1L: plant 1, large product
+2L: plant 2, large product
+3L: plant 3, large product
+1M: plant 1, large product
+2M: plant 2, medium product
+3M: plant 3, medium product
+1S: plant 1, small product
+2S: plant 2, small product
+3S: plant 3, small product
+
+Goal: Maximize profits
+
+Y = 420(1L) + 420(2L) + 420(3L) + 360(1M) + 360(2M) + 360(3M) + 300(1S) + 300(2S) + 300(3S)
+
+From this, we can see that we have 9 decision variables. We will start by indicating this
+
+```{r}
+lprec <- make.lp(0, 9)
+```
+#
+Next we will write the objective function. Since the default here is minimzation whereas we want to maximize, we will flip the sign. 
+```{r}
+set.objfn(lprec, c(420,420,420,360,360,360,300,300,300))
+lp.control(lprec,sense='max')
+```
+#
+Next we can add our restraints. We will start with the plant capacity restraints. Plant 1 has capacity for 750 units, plant 2 has capacity for 900 units, and plant 3 can produce 450 units each day. 
+
+```{r}
+add.constraint(lprec, c(1,0,0,1,0,0,1,0,0), "<=", 750)
+add.constraint(lprec, c(0,1,0,0,1,0,0,1,0), "<=", 900)
+add.constraint(lprec, c(0,0,1,0,0,1,0,0,1), "<=", 450)
+```
+#
+Next we have the sqft constraint to add. Plants 1, 2, and 3 have 13,000, 12,000, and 5,000 square feet, respectively, of in-process storage space available for a day's production of this product. Each unit of the large, medium, and small sizes produced per day requires 20, 15, and 12 square feet, 
+respectively. 
+```{r}
+add.constraint(lprec, c(20,0,0,15,0,0,12,0,0), "<=", 13000)
+add.constraint(lprec, c(0,20,0,0,15,0,0,12,0), "<=", 12000)
+add.constraint(lprec, c(0,0,20,0,0,15,0,0,12), "<=", 5000)
+```
+#
+We also have a maximum demand constraint. Sales forecasts indicate that if available, 900, 1,200, and 750 units of the large, medium, and small sizes, respectively, would be sold per day. 
+```{r}
+add.constraint(lprec, c(1,1,1,0,0,0,0,0,0), "<=", 900)
+add.constraint(lprec, c(0,0,0,1,1,1,0,0,0), "<=", 1200)
+add.constraint(lprec, c(0,0,0,0,0,0,1,1,1), "<=", 750)
+```
+#
+Finally, at each plant, some employees will need to be laid off unless most of the plant’s excess 
+production capacity can be used to produce the new product. To avoid layoffs if possible, 
+management has decided that the plants should use the same percentage of their excess capacity 
+to produce the new product. 
+This means that 1/750 (1L + 1M + 1S) - 1/900 (2L + 2M + 2S) = 0 
+1/450 (3L + 3M + 3S) - 1/900 (2L + 2M + 2S) = 0
+```{r}
+add.constraint(lprec, c(0.001333,-0.00111,0,0.001333,-0.00111,0,0.001333,-0.00111,0), "=", 0)
+add.constraint(lprec, c(0,-0.00111,0.00222,0,-0.00111,0.00222,0,-0.00111,0.00222), "=", 0)
+```
+#
+The default output is a positive number, however we can code this to make sure. 
+```{r}
+set.bounds(lprec, lower = c(0, 0), columns = c(1, 2))
+```
+#
+Next we can build the output chart with headers
+```{r}
+RowNames <- c("1", "2", "3", "4", "5,", "6", "7", "8", "9", "10", "11")
+ColNames <- c("1", "2", "3", "4", "5,", "6", "7", "8", "9")
+dimnames(lprec) <- list(RowNames, ColNames)
+lprec
+solve(lprec)
+```
+# 
+We get 0 as the output. These means that the model ran successfully. We will get the true variables as the final step.
+
+```{r}
+get.objective(lprec)
+get.variables(lprec)
+```
+# ANSWER
+The maximum profit is $695,906.2. This can be obtained with the following production plan:
+1L: plant 1, large product - 518 units
+2L: plant 2, large product - 0 units
+3L: plant 3, large product - 0 units
+1M: plant 1, large product - 176 units
+2M: plant 2, medium product - 667 units
+3M: plant 3, medium product - 0 units
+1S: plant 1, small product - 0 units
+2S: plant 2, small product - 167 units
+3S: plant 3, small product - 417 units
+
+
+##
+Next we can confirm that the constraints are met
+Capacity constraint:
+Plant 1 Capacity 750 units (we are producing 694)
+plant 2 capacity 900 units (we are producing 833)
+plant 3 capacity 450 units (we are producing 417)
+
+Sqft capacity constraint:
+Plant 1 capacity 13000 (we are using 13000)
+Plant 2 capacity 12000 (we are using 11999)
+Plant 3 capacity 5000 (we are using 499)
+
+Sales Forcast constraint:
+Large 900 units (we are selling 518)
+Medium 1200 units (we are selling 842)
+Small 750 units (we are selling 583)
+
+% of excess capacity being used
+plant 1: 92.5%
+plant 2: 92.5% 
+plant 3: 92.5%
+
+From this, we can see that all of the constraints have been met and we are safe to say that this is the best production plan to maximize the company's profits. 
+
