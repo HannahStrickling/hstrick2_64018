@@ -1,0 +1,90 @@
+---
+title: "Assignment 3"
+author: "Hannah Strickling"
+date: "2022-09-26"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
+library("lpSolve")
+library(lpSolveAPI)
+```
+Heart Start produces automated external defibrillators (AEDs) in each of two different plants (A and B). The unit production costs and monthly production capacity of the two plants are indicated in the table below. The AEDs are sold through three wholesalers. The shipping cost from each plant to the warehouse of each wholesaler along with the monthly demand from each wholesaler are also indicated in the table. How many AEDs should be produced in each plant, and how should they be distributed to each of the three wholesaler warehouses so as to minimize the combined cost of production and shipping? 
+
+Variables:
+A1 - production for plant A warehouse 1
+A2 - production for plant A warehouse 2
+A3 - production for plant A warehouse 3
+A4 - production for plant A warehouse 4
+B1 - production for plant B warehouse 1
+B2 - production for plant B warehouse 2
+B3 - production for plant B warehouse 3
+B4 - production for plant B warehouse 4
+
+
+Feasibility
+Supply = Demand
+Currently, our total demand of 210 does not meet our total supply of 220.
+
+To have supply = demand, we will create a dummy warehouse (warehouse 4) with a monthly demand of 10. This dummy warehouse represents the unused production capacity. The costs for this warehouse are $0 as it is fictional. 
+Now, our total monthly demand = 220 = total monthly supply = 220
+
+Objective Function:
+
+(Minimize) y = 22A1 + 14A2 + 30A3 + 16B1 + 20B2 + 24B3 + 600(A1 + A2 + A3) + 625(B1 + B2 + B3 + B4)
+or
+(Minimize) y = 622A1 + 614A2 + 630A3 + 0A4 + 641B1 + 645B2 + 649B3 + 0B4
+
+
+Constraints:
+A1 + B1 = 80
+A2 + B2 = 60
+A3 + B3 = 70
+A4 + B4 = 10
+
+A1 + A2 + A3 + A4 = 100
+B1 + B2 + B3 + B4 = 120
+
+```{r}
+lprec <- make.lp(0, 8)
+```
+
+```{r}
+set.objfn(lprec, c(622,614,630,0,641,645,649,0))
+lp.control(lprec, sense='min')
+```
+
+```{r}
+add.constraint(lprec, c(1, 0, 0, 0, 1, 0, 0, 0), "=", 80)
+add.constraint(lprec, c(0, 1, 0, 0, 0, 1, 0, 0), "=", 60)
+add.constraint(lprec, c(0, 0, 1, 0, 0, 0, 1, 0), "=", 70)
+add.constraint(lprec, c(0, 0, 0, 1, 0, 0, 0, 1), "=", 10)
+
+
+add.constraint(lprec, c(1, 1, 1, 1, 0, 0, 0, 0), "=", 100)
+add.constraint(lprec, c(0, 0, 0, 0, 1, 1, 1, 1), "=", 120)
+```
+
+```{r}
+solve(lprec)
+```
+
+```{r}
+get.objective(lprec)
+get.variables(lprec)
+```
+Variables:
+A1 - production for plant A warehouse 1 - 0  units
+A2 - production for plant A warehouse 2 - 60 units
+A3 - production for plant A warehouse 3 - 40 units
+A4 - production for plant A warehouse 4 - 0  units
+B1 - production for plant B warehouse 1 - 80 units
+B2 - production for plant B warehouse 2 - 0  units
+B3 - production for plant B warehouse 3 - 30 units
+B4 - production for plant B warehouse 4 - 10 units of unused capacity
+
+Total Cost: $132,790
