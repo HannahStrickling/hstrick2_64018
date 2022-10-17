@@ -1,0 +1,118 @@
+---
+title: "Module 8 DEA"
+author: "Hannah Strickling"
+date: "2022-10-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+
+library(lpSolveAPI)
+library(Benchmarking)
+
+dmu1 <- read.csv("DMU1.csv")
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Reference: https://www.rdocumentation.org/packages/Benchmarking/versions/0.30/topics/dea
+
+
+
+
+
+# Questions 1 & 2
+## Run the DEA model under the different assumtions and determine the peers and lambda for each model
+
+### First we will read our input data. We will read the data as input and output as vectors. For this problem we have 6 DMUs with Staff Hours per Day and Supplies per Day as input variables and Reimbursed Patient Days and Privately Paid Patient Days as output variables. 
+
+```{r}
+x <- matrix(c(150,400,320,520,350,320,0.2,0.7,1.2,2.0,1.2,0.7), ncol = 2)
+
+y <- matrix(c(14000,14000,42000,28000,19000,14000, 3500,21000,10500,42000,25000,15000),ncol = 2)
+
+
+colnames(x) <- c("Staff Hours per Day", "Supplies per Day")
+colnames(y) <- c("Reimbursed Patient Days", "Privately Paid Patient Days")
+
+x
+y
+
+```
+### Now we will run the DEA analysis using the benchmarking library. We will use the option of CRS. CRS = Constant returns to scale, convexity and free disposability
+
+```{r}
+e1 <- dea(x,y,RTS = "crs")
+e1
+```
+### Next we will determine the Peers and Lamba
+
+```{r}
+peers(e1)
+lambda(e1)
+dea.plot.isoquant(x,y,RTS="crs") 
+
+```
+### Now we will run under the assumption of FDH. FDH = 	Free disposability hull, no convexity assumption
+```{r}
+e2 <- dea(x,y,RTS = "fdh")
+e2
+
+peers(e2)
+lambda(e2)
+dea.plot.isoquant(x,y,RTS="fdh") 
+```
+### Now we will use the vrs assumption. VRS = Variable returns to scale, convexity and free disposability
+```{r}
+e3 <- dea(x,y,RTS = "vrs")
+e3
+
+peers(e3)
+lambda(e3)
+dea.plot.isoquant(x,y,RTS="vrs") 
+```
+### Now we will use the irs assumption. IRS = 	Increasing returns to scale, (up-scaling, but not down-scaling), convexity and free disposability
+```{r}
+e4 <- dea(x,y,RTS = "irs")
+e4
+
+peers(e4)
+lambda(e4)
+dea.plot.isoquant(x,y,RTS="irs") 
+```
+### Next is the drs. DRS = Decreasing returns to scale, convexity, down-scaling and free disposability
+```{r}
+e5 <- dea(x,y,RTS = "drs")
+e5
+
+peers(e5)
+lambda(e5)
+dea.plot.isoquant(x,y,RTS="drs") 
+```
+### Finally we will use frh. FRH = Free Replication Hull. A combination of free disposability and restricted or local constant return to scale. R would not recognize frh as an rts option so i am utilizing the fdh+ option
+```{r}
+e6 <- dea(x,y,RTS = "fdh+")
+e6
+
+peers(e6)
+lambda(e6)
+```
+
+# Question 3 Summarize Results into table
+
+```{r}
+e1
+e2
+e3
+e4
+e5
+e6
+```
+```{r}
+Q3 <- read.csv("Summary.csv")
+Q3
+```
+# Question 4 Compare and Contrast the Results
+
+We looked at the six classical DEA models: namely,the original constant return to scale (CRS) model; the decreasing, increasing and varying return to scale (DRS, IRS and VRS) models; and the free disposability and the replicability hull (FDH, FRH) models. 
+Lets start with CRS and DRS. When looking at the results of the model under these assumptions we will see that facilities 1, 2, 3, and 4 are efficient however facility 5 is only 97.75% efficient and 86.75% for facility 6. Under FDH and FRH all facilities are efficient. With VRS and IRS, all firms are efficient except for 6 which is at 89.63% efficient. 
+
+The purpose of running the peers is to see for the inefficient facilities, which efficient facility they should reference to lead to improvements. As we saw above, under CRS and DRS firms 5 and 6 are not efficient. Both firms should reference facilities 1, 2, and 4 for improvements. Under VRS and IRS facility 6 is inefficient and when looking at the peers, we will see that this facility should reference facilities 1, 2, and 5 to make improvements to its efficiency.The lambda results help us determine deeper insights into the peer by providing weights for the reference unit. For example, under CRS and DRS, we will notice that the weights for facilities 1, 2, and 4 are 34%, 39%, and 13% respectively. Under VRS and IRS, firms 1, 2, and 5, are weighted as 40%, 34%, and 25%. 
