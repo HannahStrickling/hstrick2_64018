@@ -1,0 +1,72 @@
+---
+title: "Module 9"
+author: "Hannah Strickling"
+date: "2022-10-17"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1
+
+Goal: Maximize Z = P - 6C - 3D, where
+P = total (discounted) profit over the life of the new products,
+C = change (in either direction) in the current level of employment,
+D = decrease (if any) in next year’s earnings from the current year’s level
+
+Subject to:
+6x1 + 4x2 + 5x3 = 50 (employment goal)
+8x1 + 7x2 + 5x3 >= 75 (earnings goal)
+
+Auxiliary Variables
+y1 = 6x1 + 4x2 + 5x3 - 50
+y2 = 8x1 + 7x2 + 5x3 - 75
+
+Penalty Weights:
+(P) Profit = 20x1 + 15x2 + 25x3
+(C) Level of employment + or - = 6
+(D) Earnings goal - = 3
+
+# Question 2
+Now we can express the overall objective function. There is no penalty for an increase in the earnings so y2+ will not appear.
+
+Maximize Z = P - ((6y1+) - (6y1-) - (3y2-))
+(y1+) - (y1-) = 6x1 + 4x2 + 5x3 -50
+(y2+) - (y2-) = 8x1 + 7x2 + 5x3 - 75
+
+Re writing our constraints we get our final formulation:
+Maximize Z = P - (6(y1+) - 6(y1-) - 3(y2-))
+
+(y1+) - (y1-) = 6x1 + 4x2 + 5x3 - 50
+(y2+) - (y2-) = 8x1 + 7x2 + 5x3 - 75
+
+Where:
+6x1 + 4x2 + 5x3 - (y1+ - y1-) = 50
+8x1 + 7x2 + 5x3 - (y2+ - y2-) = 75
+
+and:
+P = 20x1 + 15x2 + 25x3
+
+
+Z = (20x1 + 15x2 + 25x3) - (6(y1+) - 6(y1-) - 3(y2-))
+
+# Question 3 Formulate and Solve
+```{r}
+library(lpSolveAPI)
+lprec <- make.lp(2, 6)
+set.objfn(lprec, c(20,15,25,-6,-6,-3))
+lp.control(lprec, sense='max')
+
+add.constraint(lprec, c(6,4,5,-1,1,0), "=", 50)
+add.constraint(lprec, c(8,7,5,0,0,1), "=", 75)
+
+solve(lprec)
+get.objective(lprec)
+get.variables(lprec)
+```
+
+# Question 3 Findings
+From these findings we will want to produce only a total of 15 units of product three (x3). We will not produce products one or two (x1 or x2). In doing so, y1+ is 25. This means that the employment level goal is exceeded by 25 hundred employees. Our goal was to keep it at 50 hundred, however with our production plan it will require 75 hundred employees. As a result, we will face a penalty of 6 x 25 or 300. On the other hand, our y2+ is 0 meaning we met this goal. Our earnings next year are 75 which is right on track with the goal. 
+
